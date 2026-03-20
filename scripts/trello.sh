@@ -60,11 +60,21 @@ _jwt_exp() {
 }
 
 _fetch_token() {
+  local refresh_token="${1:-}"
+  local body
+  body=$(jq -n \
+    --arg provider "trello" \
+    --arg scope    "$SCOPE" \
+    --arg intent   "$INTENT" \
+    '{provider: $provider, scope: $scope, intent: $intent}')
+  [[ -n "$refresh_token" ]] && \
+    body=$(printf '%s' "$body" | jq --arg t "$refresh_token" '. + {refresh_token: $t}')
+
   local response token exp
   response=$(curl -sf -X POST "https://okoro.ai/t/tokens" \
     -H "Authorization: Bearer ${OKORO_SERVICE_TOKEN}" \
     -H "Content-Type: application/json" \
-    -d "{\"provider\":\"trello\",\"scope\":\"${SCOPE}\",\"intent\":$(printf '%s' "${INTENT}" | jq -Rs .)}")
+    -d "$body")
   token=$(printf '%s' "$response" | jq -r '.token // empty')
   [[ -z "$token" ]] && { echo "Error: failed to obtain token" >&2; exit 1; }
   exp=$(_jwt_exp "$token")
@@ -73,6 +83,7 @@ _fetch_token() {
 }
 
 TOKEN=""
+_expired_token=""
 if [[ -f "$TOKEN_CACHE" ]]; then
   _cached_token=$(sed -n '1p' "$TOKEN_CACHE")
   _cached_exp=$(sed -n '2p' "$TOKEN_CACHE")
@@ -80,10 +91,12 @@ if [[ -f "$TOKEN_CACHE" ]]; then
   # Reuse if token has more than 60 seconds remaining
   if [[ -n "$_cached_token" && "$_cached_exp" -gt $(( _now + 60 )) ]]; then
     TOKEN="$_cached_token"
+  else
+    _expired_token="$_cached_token"
   fi
 fi
 
-[[ -z "$TOKEN" ]] && TOKEN=$(_fetch_token)
+[[ -z "$TOKEN" ]] && TOKEN=$(_fetch_token "$_expired_token")
 
 # ── Make the request ───────────────────────────────────────────────────────
 PROXY_URL="https://okoro.ai/p/trello${ENDPOINT}"
