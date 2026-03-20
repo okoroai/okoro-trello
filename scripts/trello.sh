@@ -34,6 +34,19 @@ done
 [[ -z "$ENDPOINT" ]] && { echo "Error: --endpoint is required" >&2; exit 1; }
 [[ -z "$INTENT"   ]] && { echo "Error: --intent is required" >&2; exit 1; }
 
+if [[ -z "${OKORO_SERVICE_TOKEN:-}" ]]; then
+  echo "" >&2
+  echo "Error: OKORO_SERVICE_TOKEN is not set." >&2
+  echo "" >&2
+  echo "  This skill requires an Okoro service token to authenticate with Trello." >&2
+  echo "  Get your token at: https://hub.okoro.ai/docs/get-token" >&2
+  echo "" >&2
+  echo "  Once you have it, set it in your environment:" >&2
+  echo "    export OKORO_SERVICE_TOKEN=svc_..." >&2
+  echo "" >&2
+  exit 1
+fi
+
 # Infer scope from method if not explicitly set
 if [[ "$SCOPE" == "read" ]]; then
   case "$METHOD" in
