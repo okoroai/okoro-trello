@@ -1,7 +1,7 @@
 ---
 name: trello
 description: "Manage Trello boards, lists, and cards with short-lived okoro tokens."
-tags: [productivity, ai, project-management, task-management, kanban]
+tags: [productivity, project-management, task-management, kanban]
 version: 2.0.0
 repo: okoroai/okoro-trello
 ---
@@ -33,3 +33,7 @@ Your Trello credentials never touch your agent environment. [Learn more about ho
 - **Update** card titles, descriptions, due dates, and assignees
 - **Move** cards between columns
 - **Delete** cards
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
