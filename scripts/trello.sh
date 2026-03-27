@@ -50,9 +50,9 @@ fi
 # Infer scope from method if not explicitly set
 if [[ "$SCOPE" == "read" ]]; then
   case "$METHOD" in
-    POST)   SCOPE="write"  ;;
-    PUT)    SCOPE="update" ;;
-    DELETE) SCOPE="delete" ;;
+    POST)        SCOPE="write"  ;;
+    PUT|PATCH)   SCOPE="update" ;;
+    DELETE)      SCOPE="delete" ;;
   esac
 fi
 
@@ -71,10 +71,20 @@ _curl() {
   rm -f "$tmpfile"
 
   if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
-    echo "Error: request failed (HTTP $http_code)" >&2
+    echo "Error: HTTP $http_code" >&2
     local err_msg
-    err_msg=$(printf '%s' "$body" | jq -r '.error // .message // empty' 2>/dev/null || true)
-    [[ -n "$err_msg" ]] && echo "  $err_msg" >&2
+    # Handle nested error objects (e.g. {"error":{"code":403,"message":"..."}})
+    # and flat errors (e.g. {"error":"...","message":"..."})
+    err_msg=$(printf '%s' "$body" | jq -r '
+      if .error | type == "object" then (.error.message // (.error | tostring))
+      else (.error // .message) | strings
+      end
+    ' 2>/dev/null || true)
+    if [[ -n "$err_msg" ]]; then
+      echo "  $err_msg" >&2
+    elif [[ -n "$body" ]]; then
+      echo "  ${body:0:300}" >&2
+    fi
     exit 1
   fi
 

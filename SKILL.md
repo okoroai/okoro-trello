@@ -38,7 +38,7 @@ skills/trello/scripts/trello.sh \
 ```
 
 - **endpoint** — Trello API path including query parameters, e.g. `/members/me/boards` or `/boards/<id>/cards?fields=name,idList`
-- **intent** — why Claude is making this call (5–10 words, reflects the user's goal)
+- **intent** — the session intent: the user's overall goal for this conversation (not a description of the API call)
 - **method** — defaults to `GET`; set `POST`/`PUT`/`DELETE` for mutations
 - **scope** — inferred from method if omitted (`GET`→read, `POST`→write, `PUT`→update, `DELETE`→delete)
 - **payload** — JSON body for POST/PUT requests only. **Never use `--payload` with GET or HEAD** — pass filters and options as query parameters in `--endpoint` instead.
@@ -54,8 +54,9 @@ skills/trello/scripts/trello.sh \
 | Single card | GET | `/cards/<card_id>` |
 | Create card | POST | `/cards` · `{"idList":"…","name":"…","desc":"…","pos":"bottom"}` |
 | Create list | POST | `/lists` · `{"idBoard":"…","name":"…","pos":"bottom"}` |
-| Update card | PUT | `/cards/<card_id>` · `{"name":"…","idList":"…","due":"…"}` |
+| Update card | PUT | `/cards/<card_id>` · `{"name":"…","idList":"…","due":"…","pos":"…","closed":false,"dueComplete":false}` |
 | Move card | PUT | `/cards/<card_id>` · `{"idList":"<target_list_id>"}` |
+| Archive card | PUT | `/cards/<card_id>` · `{"closed":true}` |
 | Delete card | DELETE | `/cards/<card_id>` |
 
 ## Token & scope
@@ -67,11 +68,12 @@ The proxy returns HTTP 403 if the token's configured scope is insufficient.
 
 ## Intent
 
-Always pass `--intent` with the user's actual reason — not a description of the API call.
+`--intent` is the **session intent** — the user's overall goal for this conversation, not a description of the individual API call. It is logged by the proxy as the audit reason for every token issued in this session. Pass the same value for every call you make within a single user request.
 
 ```
---intent "check todo items on Okoro board"   ✓
---intent "sync full Trello board snapshot"   ✗
+--intent "review this week's Okoro board"   ✓  (why the user asked)
+--intent "get /boards/<id>/lists"           ✗  (describes the API call)
+--intent "fetch board data"                 ✗  (too vague, still call-level)
 ```
 
 ## Typical workflows
