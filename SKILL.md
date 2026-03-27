@@ -37,11 +37,11 @@ skills/trello/scripts/trello.sh \
   [--payload <json>]
 ```
 
-- **endpoint** — Trello API path, e.g. `/members/me/boards` or `/cards/<id>`
+- **endpoint** — Trello API path including query parameters, e.g. `/members/me/boards` or `/boards/<id>/cards?fields=name,idList`
 - **intent** — why Claude is making this call (5–10 words, reflects the user's goal)
 - **method** — defaults to `GET`; set `POST`/`PUT`/`DELETE` for mutations
 - **scope** — inferred from method if omitted (`GET`→read, `POST`→write, `PUT`→update, `DELETE`→delete)
-- **payload** — JSON body for POST/PUT requests
+- **payload** — JSON body for POST/PUT requests only. **Never use `--payload` with GET or HEAD** — pass filters and options as query parameters in `--endpoint` instead.
 
 ## Key endpoints
 

@@ -56,6 +56,31 @@ if [[ "$SCOPE" == "read" ]]; then
   esac
 fi
 
+# ── Curl helper — returns body on stdout; exits with error on non-2xx ────────
+_curl() {
+  local tmpfile
+  tmpfile=$(mktemp)
+  local http_code
+  http_code=$(curl -s -o "$tmpfile" -w "%{http_code}" "$@") || {
+    rm -f "$tmpfile"
+    echo "Error: curl failed (network error)" >&2
+    exit 1
+  }
+  local body
+  body=$(cat "$tmpfile")
+  rm -f "$tmpfile"
+
+  if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+    echo "Error: request failed (HTTP $http_code)" >&2
+    local err_msg
+    err_msg=$(printf '%s' "$body" | jq -r '.error // .message // empty' 2>/dev/null || true)
+    [[ -n "$err_msg" ]] && echo "  $err_msg" >&2
+    exit 1
+  fi
+
+  printf '%s' "$body"
+}
+
 # ── Token caching ──────────────────────────────────────────────────────────
 # Cache per service token prefix + scope so different workspaces don't collide.
 _token_prefix="${OKORO_SERVICE_TOKEN:4:8}"
@@ -84,12 +109,12 @@ _fetch_token() {
     body=$(printf '%s' "$body" | jq --arg t "$refresh_token" '. + {refresh_token: $t}')
 
   local response token exp
-  response=$(curl -sf -X POST "https://okoro.ai/t/tokens" \
+  response=$(_curl -X POST "https://okoro.ai/t/tokens" \
     -H "Authorization: Bearer ${OKORO_SERVICE_TOKEN}" \
     -H "Content-Type: application/json" \
     -d "$body")
   token=$(printf '%s' "$response" | jq -r '.token // empty')
-  [[ -z "$token" ]] && { echo "Error: failed to obtain token" >&2; exit 1; }
+  [[ -z "$token" ]] && { echo "Error: token missing from response" >&2; exit 1; }
   exp=$(_jwt_exp "$token")
   printf '%s\n%s' "$token" "$exp" > "$TOKEN_CACHE"
   printf '%s' "$token"
@@ -114,12 +139,17 @@ fi
 # ── Make the request ───────────────────────────────────────────────────────
 PROXY_URL="https://okoro.ai/p/trello${ENDPOINT}"
 
+if [[ -n "$PAYLOAD" && "$METHOD" =~ ^(GET|HEAD)$ ]]; then
+  echo "Error: --payload cannot be used with $METHOD requests. Pass query parameters in --endpoint instead." >&2
+  exit 1
+fi
+
 if [[ -n "$PAYLOAD" ]]; then
-  curl -sf -X "$METHOD" "$PROXY_URL" \
+  _curl -X "$METHOD" "$PROXY_URL" \
     -H "Authorization: Bearer ${TOKEN}" \
     -H "Content-Type: application/json" \
     -d "$PAYLOAD"
 else
-  curl -sf -X "$METHOD" "$PROXY_URL" \
+  _curl -X "$METHOD" "$PROXY_URL" \
     -H "Authorization: Bearer ${TOKEN}"
 fi
