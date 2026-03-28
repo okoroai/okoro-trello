@@ -19,7 +19,6 @@ METHOD="GET"
 SCOPE="read"
 PAYLOAD=""
 INTENT=""
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --endpoint) ENDPOINT="${2:?--endpoint requires a value}"; shift 2 ;;

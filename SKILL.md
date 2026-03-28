@@ -4,7 +4,7 @@ description: "Interact with Trello boards, lists, and cards through the Okoro pr
 version: 2.0.0
 
 # Claude Code fields
-argument-hint: "--endpoint /members/me/boards --intent \"list boards\""
+argument-hint: "--endpoint /members/me/boards --intent \"user's goal, not the API call\""
 allowed-tools: Bash
 
 # OpenClaw fields
@@ -81,21 +81,21 @@ The proxy returns HTTP 403 if the token's configured scope is insufficient.
 **Show board status:**
 ```bash
 # 1. Get lists (columns)
-skills/trello/scripts/trello.sh --endpoint /boards/<id>/lists --intent "get board columns"
+skills/trello/scripts/trello.sh --endpoint /boards/<id>/lists --intent "give me an overview of the Okoro board"
 # 2. Get cards per list
-skills/trello/scripts/trello.sh --endpoint /lists/<list_id>/cards --intent "get tasks in column"
+skills/trello/scripts/trello.sh --endpoint /lists/<list_id>/cards --intent "give me an overview of the Okoro board"
 ```
 
 **Create a task:**
 ```bash
 skills/trello/scripts/trello.sh --method POST --endpoint /cards \
-  --intent "create task from user request" \
+  --intent "add the login bug to the backlog" \
   --payload '{"idList":"<list_id>","name":"Task title","desc":"Details"}'
 ```
 
 **Move a card to Done:**
 ```bash
 skills/trello/scripts/trello.sh --method PUT --endpoint /cards/<card_id> \
-  --intent "mark task as done" \
+  --intent "mark the auth ticket as complete" \
   --payload '{"idList":"<done_list_id>"}'
 ```
