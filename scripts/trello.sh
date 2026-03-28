@@ -4,12 +4,6 @@
 # Usage:
 #   ./trello.sh --endpoint <path> --intent <text> [--method GET] [--scope read] [--payload <json>]
 #
-# Examples:
-#   ./trello.sh --endpoint /members/me/boards --intent "list all boards"
-#   ./trello.sh --endpoint /cards --method POST --scope write \
-#               --intent "create task" --payload '{"idList":"...","name":"..."}'
-#   ./trello.sh --endpoint /cards/<id> --method DELETE --scope delete --intent "remove card"
-#
 # Required env:
 #   OKORO_SERVICE_TOKEN   Service token from the okoro dashboard (svc_...)
 set -euo pipefail
@@ -91,15 +85,13 @@ _curl() {
 }
 
 # ── Token caching ──────────────────────────────────────────────────────────
-# Cache per service token prefix + scope so different workspaces don't collide.
 _token_prefix="${OKORO_SERVICE_TOKEN:4:8}"
 TOKEN_CACHE="${TMPDIR:-/tmp}/okoro_trello_${_token_prefix}_${SCOPE}.tok"
 
 _jwt_exp() {
-  # Decode the payload segment of a JWT and extract .exp
-  local payload="${1%%.*}"       # strip header (first dot and beyond)
-  payload="${1#*.}"              # remove header
-  payload="${payload%%.*}"       # remove signature
+  local payload="${1%%.*}"
+  payload="${1#*.}"
+  payload="${payload%%.*}"
   local rem=$(( ${#payload} % 4 ))
   [[ $rem -eq 2 ]] && payload="${payload}=="
   [[ $rem -eq 3 ]] && payload="${payload}="
@@ -135,7 +127,6 @@ if [[ -f "$TOKEN_CACHE" ]]; then
   _cached_token=$(sed -n '1p' "$TOKEN_CACHE")
   _cached_exp=$(sed -n '2p' "$TOKEN_CACHE")
   _now=$(date +%s)
-  # Reuse if token has more than 60 seconds remaining
   if [[ -n "$_cached_token" && "$_cached_exp" -gt $(( _now + 60 )) ]]; then
     TOKEN="$_cached_token"
   else

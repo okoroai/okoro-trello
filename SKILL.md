@@ -31,7 +31,7 @@ Trello operations. The script caches the session token and refreshes it automati
 ```bash
 skills/trello/scripts/trello.sh \
   --endpoint <path> \
-  --intent   <reason> \
+  --intent   <text> \
   [--method  GET|POST|PUT|DELETE] \
   [--scope   read|write|update|delete] \
   [--payload <json>]
@@ -64,7 +64,7 @@ skills/trello/scripts/trello.sh \
 `OKORO_SERVICE_TOKEN` must have at least the required scope level:
 `read` < `write` < `update` < `delete`
 
-The proxy returns HTTP 403 if the token's configured scope is insufficient.
+**Scope auto-inference:** `GET`→`read`, `POST`→`write`, `PUT`→`update`, `DELETE`→`delete`. Pass `--scope` explicitly when the inferred scope would be insufficient.
 
 ## Intent
 
